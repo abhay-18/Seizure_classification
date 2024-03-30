@@ -1,9 +1,9 @@
 # seizure-type-classification-tuh
 
-This repo contains siamese network model for seizure type classification for two classes (background, seizure).
+This repo contains siamese network model for seizure type classification for two classes (background, seizure).<br>
 Dataset - <https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml>
 
-The fft is generated for raw data to input it in the model. 
+The fft is generated for raw data to input it in the model.<br>
 For more details, please refer to: `data_preparation`
 
 ## Cite us
