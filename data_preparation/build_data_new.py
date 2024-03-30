@@ -15,7 +15,7 @@ import h5py
 import progressbar
 from time import sleep
 if len(sys.argv) != 3:
-    print("Usage: python script.py input_data_directory preprocess_data_dir")
+    print("Usage: python script.py input_data_directory save_data_dir")
     sys.exit(1)
 
 parameters = pd.read_csv('data_preparation/parameters.csv', index_col=['parameter'])

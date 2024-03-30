@@ -16,7 +16,7 @@ print('Current working path is %s' % str(os.getcwd()))
 sys.path.insert(0, os.getcwd())
 
 if len(sys.argv) != 3:
-    print("Usage: python script.py input_data_directory preprocess_data_dir")
+    print("Usage: python script.py input_data_directory save_data_dir")
     sys.exit(1)
 
 seizure_type_data = collections.namedtuple(
