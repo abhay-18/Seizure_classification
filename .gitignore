@@ -1,3 +1,10 @@
 virtual_env/
 __pycache__/
-
+data_preparation/a.py
+data_preparation/build_data.py
+data_preparation/generate_fft_images.py
+data_preparation/random_sample.py
+data_preparation/test.pkl
+data_preparation/test.py
+data_preparation/test2.py
+data_preparation/test2.pkl

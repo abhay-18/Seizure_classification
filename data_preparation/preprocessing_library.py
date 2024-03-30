@@ -25,20 +25,24 @@ class Slice:
     def apply(self, data):
         return data[..., self.start:self.stop]
 
+
 class Magnitude:
     """
     Job: Take magnitudes of Complex data
     """
+
     def get_name(self):
         return "mag"
 
     def apply(self, data):
         return np.absolute(data)
 
+
 class MagnitudeAndPhase:
     """
     Take the magnitudes and phases of complex data and append them together.
     """
+
     def get_name(self):
         return "magphase"
 
@@ -47,24 +51,29 @@ class MagnitudeAndPhase:
         phases = np.angle(data)
         return np.concatenate((magnitudes, phases), axis=1)
 
+
 class Log10:
     """
     Apply Log10
     """
+
     def get_name(self):
         return "log10"
 
     def apply(self, data):
         # 10.0 * log10(re * re + im * im)
         indices = np.where(data <= 0)
+        # print("H1",data)
         data[indices] = np.max(data)
         data[indices] = (np.min(data) * 0.1)
         return np.log10(data)
+
 
 class FFT:
     """
     Apply Fast Fourier Transform to the last axis.
     """
+
     def get_name(self):
         return "fft"
 
@@ -77,6 +86,7 @@ class MFCC:
     """
     Mel-frequency cepstrum coefficients
     """
+
     def get_name(self):
         return "mfcc"
 
@@ -88,10 +98,12 @@ class MFCC:
 
         return np.array(all_ceps)
 
+
 class Resample:
     """
     Resample time-series data.
     """
+
     def __init__(self, sample_rate):
         self.f = sample_rate
 
@@ -109,16 +121,19 @@ class StandardizeLast:
     """
     Scale across the last axis.
     """
+
     def get_name(self):
         return 'standardize-last'
 
     def apply(self, data):
         return preprocessing.scale(data, axis=data.ndim-1)
 
+
 class StandardizeFirst:
     """
     Scale across the first axis.
     """
+
     def get_name(self):
         return 'standardize-first'
 
@@ -130,6 +145,7 @@ class CorrelationMatrix:
     """
     Calculate correlation coefficients matrix across all EEG channels.
     """
+
     def get_name(self):
         return 'correlation-matrix'
 
@@ -142,6 +158,7 @@ class Eigenvalues:
     Take eigenvalues of a matrix, and sort them by magnitude in order to
     make them useful as features (as they have no inherent order).
     """
+
     def get_name(self):
         return 'eigenvalues'
 
@@ -161,6 +178,7 @@ def upper_right_triangle(matrix):
 
     return np.array(accum)
 
+
 class FreqCorrelation:
     """
     Correlation in the frequency domain. First take FFT with (start, end) slice options,
@@ -169,6 +187,7 @@ class FreqCorrelation:
     The output features are (fft, upper_right_diagonal(correlation_coefficients), eigenvalues)
     Features can be selected/omitted using the constructor arguments.
     """
+
     def __init__(self, start, end, scale_option, with_fft=False, with_corr=True, with_eigen=True):
         self.start = start
         self.end = end
@@ -231,6 +250,7 @@ class TimeCorrelation:
     The output features are (upper_right_diagonal(correlation_coefficients), eigenvalues)
     Features can be selected/omitted using the constructor arguments.
     """
+
     def __init__(self, max_hz, scale_option, with_corr=True, with_eigen=True):
         self.max_hz = max_hz
         self.scale_option = scale_option
@@ -288,6 +308,7 @@ class TimeFreqCorrelation:
     """
     Combines time and frequency correlation, taking both correlation coefficients and eigenvalues.
     """
+
     def __init__(self, start, end, max_hz, scale_option):
         self.start = start
         self.end = end
@@ -300,7 +321,8 @@ class TimeFreqCorrelation:
 
     def apply(self, data):
         data1 = TimeCorrelation(self.max_hz, self.scale_option).apply(data)
-        data2 = FreqCorrelation(self.start, self.end, self.scale_option).apply(data)
+        data2 = FreqCorrelation(self.start, self.end,
+                                self.scale_option).apply(data)
         assert data1.ndim == data2.ndim
         return np.concatenate((data1, data2), axis=data1.ndim-1)
 
@@ -309,6 +331,7 @@ class FFTWithTimeFreqCorrelation:
     """
     Combines FFT with time and frequency correlation, taking both correlation coefficients and eigenvalues.
     """
+
     def __init__(self, start, end, max_hz, scale_option):
         self.start = start
         self.end = end
@@ -321,7 +344,8 @@ class FFTWithTimeFreqCorrelation:
 
     def apply(self, data):
         data1 = TimeCorrelation(self.max_hz, self.scale_option).apply(data)
-        data2 = FreqCorrelation(self.start, self.end, self.scale_option, with_fft=True).apply(data)
+        data2 = FreqCorrelation(self.start, self.end,
+                                self.scale_option, with_fft=True).apply(data)
         assert data1.ndim == data2.ndim
-        
+
         return np.concatenate((data1, data2), axis=data1.ndim-1)

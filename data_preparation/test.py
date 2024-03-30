@@ -1,82 +1,101 @@
+import warnings
+from joblib import Parallel, delayed
 import numpy as np
+from pipeline import Pipeline
+from preprocessing_library import FFT, Slice, Magnitude, Log10
+import collections
+import dill as pickle
+import argparse
+import platform
 import os
 import sys
-import platform
-import argparse
-import pandas as pd
-import numpy as np
-import math
-import collections
-from tabulate import tabulate
-import pyedflib
-import re
-from scipy.signal import resample
-import pickle
-import h5py
-import progressbar
-from time import sleep
+from matplotlib import pyplot as plt
 
-parameters = pd.read_csv('parameters.csv', index_col=['parameter'])
+print('Current working path is %s' % str(os.getcwd()))
+sys.path.insert(0, os.getcwd())
 
 
-def extract_signal(f, signal_labels, electrode_name, start, stop):
+seizure_type_data = collections.namedtuple(
+    'seizure_type_data', ['patient_id', 'seizure_type', 'data'])
 
-    tuh_label = [s for s in signal_labels if 'EEG ' +
-                 electrode_name + '-' in s]
+def convert_to_fft(window_length, window_step, fft_min_freq, fft_max_freq, sampling_frequency, time_series_data):
 
-    if len(tuh_label) > 1:
-        print(tuh_label)
-        exit('Multiple electrodes found with the same string! Abort')
+    warnings.filterwarnings("ignore")
+    # print("H3", type_data.shape)
+    pipeline = Pipeline(
+        [FFT(), Slice(fft_min_freq, fft_max_freq), Magnitude(), Log10()])
+    # time_series_data = np.array(type_data.data)
+    print(time_series_data.shape)
+    start, step = 0, int(np.floor(window_step * sampling_frequency))
+    stop = start + int(np.floor(window_length * sampling_frequency))
+    fft_data = []
+    # print("H5", start, stop, step)
+    while stop <= time_series_data.shape[1]:
+        # print(stop, time_series_data.shape[1])
+        # print("H6",start, stop)
+        signal_window = time_series_data[:, start:stop]
+        # print("H2" ,signal_window.shape)
+        fft_window = pipeline.apply(signal_window)
+        fft_data.append(fft_window)
+        start, stop = start + step, stop + step
 
-    channel = signal_labels.index(tuh_label[0])
-    signal = np.array(f.readSignal(channel))
-
-    start, stop = float(start), float(stop)
-    original_sample_frequency = f.getSampleFrequency(channel)
-    original_start_index = int(
-        np.floor(start * float(original_sample_frequency)))
-    original_stop_index = int(
-        np.floor(stop * float(original_sample_frequency)))
-
-    seizure_signal = signal[original_start_index:original_stop_index]
-
-    new_sample_frequency = int(parameters.loc['sampling_frequency']['value'])
-    new_num_time_points = int(np.floor((stop - start) * new_sample_frequency))
-    seizure_signal_resampled = resample(seizure_signal, new_num_time_points)
-
-    return seizure_signal_resampled
-
-
-def read_edfs_and_extract(edf_path, edf_start, edf_stop):
-
-    f = pyedflib.EdfReader(edf_path)
-
-    montage = str(parameters.loc['montage']['value'])
-    montage_list = re.split(';', montage)
-    signal_labels = f.getSignalLabels()
-    x_data = []
-
-    for i in montage_list:
-        electrode_list = re.split('-', i)
-        electrode_1 = electrode_list[0]
-        extracted_signal_from_electrode_1 = extract_signal(
-            f, signal_labels, electrode_name=electrode_1, start=edf_start, stop=edf_stop)
-        electrode_2 = electrode_list[1]
-        extracted_signal_from_electrode_2 = extract_signal(
-            f, signal_labels, electrode_name=electrode_2, start=edf_start, stop=edf_stop)
-        this_differential_output = extracted_signal_from_electrode_1 - \
-            extracted_signal_from_electrode_2
-        x_data.append(this_differential_output)
-
-    f._close()
-    del f
-
-    x_data = np.array(x_data)
-    return x_data
+    fft_data = np.array(fft_data)
+    return fft_data
 
 
-data = read_edfs_and_extract("E:/tuh_seizure_v2.0.3/edf/train/aaaaaaac/s004_2002/02_tcp_le/aaaaaaac_s004_t000.edf", 0.0, 321.00)
-print(data.shape)
-arr = np.load("E:/new_data/train/bckg/aaaaaaac_s004_t000_0.pkl", allow_pickle=True)
-print(arr.shape)
-print(np.array_equal(data, arr))
+input_data_dir = "E:/new_data/train/bckg/aaaaabom_s005_t005_0.pkl"
+# preprocessed_data_dir = ""
+
+# classes = ['bckg']
+# make folders in new_data
+# for set_folder in ['train', 'dev', 'eval']:
+#     for class_label in classes:
+#         os.makedirs(os.path.join(preprocessed_data_dir,
+#                     set_folder, class_label), exist_ok=True)
+
+
+sampling_frequency = 250  # Hz
+fft_min_freq = 1  # Hz
+
+window_lengths = [1]
+fft_max_freqs = [126]
+
+# for set_folder in ['train', 'dev', 'eval']:
+#     set_path = os.path.join(input_data_dir, set_folder)
+
+#     for label in classes:
+#         main_path = os.path.join(set_path, label)
+
+#         try:
+#             for files in os.listdir(main_path):
+#                 sample_path = os.path.join(main_path, files)
+#                 file_name = files.split('.')[0]
+#                 print(sample_path)
+for window_length in window_lengths:
+    # window_steps = list(np.arange(window_length/4, window_length/2 + window_length/4, window_length/4))
+    window_steps = [0.25]
+    for window_step in window_steps:
+        for fft_max_freq_actual in fft_max_freqs:
+            fft_max_freq = fft_max_freq_actual * window_length
+            fft_max_freq = int(np.floor(fft_max_freq))
+            print('window length: ', window_length, 'window step: ',
+                  window_step, 'fft_max_freq', fft_max_freq)
+
+            type_data = pickle.load(open(input_data_dir, 'rb'))
+            time_series_data = np.array(type_data.data)
+
+            if(time_series_data.shape[1] < 250):
+                continue
+            else:
+
+                converted_data = convert_to_fft(
+                    window_length, window_step, fft_min_freq, fft_max_freq, sampling_frequency, time_series_data)
+                # print(converted_data.shape)
+                converted_data = np.reshape(
+                    converted_data, (converted_data.shape[1], converted_data.shape[2], converted_data.shape[0]))
+                print(converted_data.shape)
+                with open(('./test.pkl'), 'wb') as myfile:
+                    pickle.dump(converted_data, myfile)
+
+        # except Exception as e:
+        #     print(e)

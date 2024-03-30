@@ -14,6 +14,9 @@ import pickle
 import h5py
 import progressbar
 from time import sleep
+if len(sys.argv) != 3:
+    print("Usage: python script.py input_data_directory preprocess_data_dir")
+    sys.exit(1)
 
 parameters = pd.read_csv('data_preparation/parameters.csv', index_col=['parameter'])
 
@@ -66,8 +69,8 @@ def read_edfs_and_extract(edf_path, edf_start, edf_stop):
     return x_data
 
 
-input_dir = "E:/tuh_seizure_v2.0.3/edf/" # Input path
-output_dir = "E:/new_data_test/" # Output Path
+input_dir = sys.argv[1] # Input path
+output_dir = sys.argv[2]  # Output Path
 
 classes = ['seiz', 'bckg']
 # make folders in new_data
