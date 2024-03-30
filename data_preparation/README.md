@@ -21,7 +21,7 @@ We have preprocessed the data to generate fft images.
 
 Exemplary usage:                        
 ```
-python3 data_preparation/generate_fft_images.py --input_data_dir [Path to seizure type data] 
+python3 data_preparation/generate_fft_images_new.py --input_data_dir [Path to seizure type data] 
     --preprocess_data_dir [Path to preprocessed seizure type data]
 ```
 
