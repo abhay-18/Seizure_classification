@@ -21,4 +21,4 @@ model_weights/siamese_model_1.h5
 model_weights/siamese_model_2.h5
 model_weights/siamese_model_3.h5
 model_weights/siamese_model_5.h5
-
+model_weights/.DS_Store
